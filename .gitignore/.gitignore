@@ -1,0 +1,125 @@
+public class ATM  {
+
+    private Screen s;
+    private Keypad key;
+    private Database db;
+    private DepositSlot ds;
+    private CashDispenser cd;
+    private boolean userAuthenticated;
+    private int AccNo;
+    private Admin admin = new Admin(this,true);
+    // we can make this false .For sample execution i made this loginStatus as true
+
+    public ATM(){
+        userAuthenticated = false;
+        AccNo = 0;
+        s = new Screen();
+        key = new Keypad();
+        db = new Database(this);
+        ds = new DepositSlot();
+        cd = new CashDispenser();
+    }
+    public void run(){
+        while(!userAuthenticated)
+        {
+            s.displayMessageLine("\nWelcome !!");
+            authenticateUser();
+
+        }
+        performTransactions();
+        // change the status of all instance variables
+        userAuthenticated = false;
+        AccNo = 0;
+        s.displayMessageLine("\nThank you for using our services! Have a Great Day !\n");
+    }
+    private void authenticateUser(){
+        s.displayMessage("\n please enter your account number : ");
+        int accountNumber = key.getInput();
+        s.displayMessage("\nEnter your Five-digit pin : ");
+        int pin = key.getInput();
+        userAuthenticated = db.authenticateUser(accountNumber, pin);
+        if(userAuthenticated)
+            AccNo = accountNumber;
+        else
+            s.displayMessageLine("\nEntered accountNumber or pin is INCORRECT / INVALID , Please try again !!");    
+    }
+    private void performTransactions(){
+        Transaction presentTransaction = null;
+        boolean userExited = false;
+        while( !userExited){
+            int mainMenu = displayMainMenu(); 
+            switch(mainMenu){
+                case 1:
+                case 2:
+                case 3:
+                case 4:
+                    presentTransaction = createTransaction(mainMenu);
+                    presentTransaction.execute();
+                    break;
+                case 5:
+                    db.changePin(AccNo);
+                    break;
+                case 6:
+                    s.displayMessageLine("\nExiting.....");  
+                    userExited = true;
+                    break;
+                default :
+                    s.displayMessageLine("\nYou entered an invalid input . Please try again !!");   
+                    break;   
+            }
+        }
+    }
+    private int displayMainMenu(){
+        s.displayMessageLine("\nMain Menu : ");
+        s.displayMessageLine("1 - View my balance");
+        s.displayMessageLine("2 - Withdraw cash");
+        s.displayMessageLine("3 - Deposit funds");
+        s.displayMessageLine("4 - Mini Statement");
+        s.displayMessageLine("5 - Change your pin");
+        s.displayMessageLine("6 - Exit\n");
+        s.displayMessage("Enter your choice : ");
+        return key.getInput();
+    }
+    private Transaction createTransaction(int type){
+        Transaction t = null;
+        switch(type){
+            case 1:
+                t = new BalanceInquiry(AccNo,s,db);
+                break;
+            case 2:
+                t = new Withdrawal(AccNo, s, db, key,cd);
+                break;
+            case 3:
+                t = new Deposit(AccNo, s, db, key, ds);
+                break;
+            case 4:
+                t = new MiniStatement(AccNo,s,db);
+                break;
+        }
+        return t;
+    }
+
+    public Database getDb() {
+        return db;
+    }
+
+    public Admin getAdmin() {
+        return admin;
+    }
+
+    public boolean isUserAuthenticated() {
+        return userAuthenticated;
+    }
+
+    public void setAdmin(Admin admin) {
+        this.admin = admin;
+    }
+
+    public Screen getS() {
+        return s;
+    }
+
+    public Keypad getKey() {
+        return key;
+    }
+}
